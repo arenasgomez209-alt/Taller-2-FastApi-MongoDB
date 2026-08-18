@@ -18,3 +18,8 @@ De acuerdo a lo solicitado y las actividades propuestas en la imagen, se han rea
 - Se realizaron los respectivos commits segÃºn las entregas de cada fase y se fusionaron a la rama `main`:
   1. `Primer commit con estructura, requirements.txt y modelos Pydantic.`
   2. `Merge a main con la API funcional y lista para ser consumida.`
+
+## Requerimiento 5: Frontend en Django
+- **Creación de Proyecto Django**: Se inicializó un proyecto Django en la carpeta rontend/ y la aplicación pp_frontend.
+- **Vistas (MVT)**: Se crearon vistas que utilizan la librería equests para consumir la API FastAPI internamente.
+- **Plantillas HTML**: Se diseñaron plantillas con Bootstrap 5 para el CRUD de productos y la creación/listado de pedidos.

@@ -1,0 +1,31 @@
+{% extends 'app_frontend/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Catálogo de Productos</h2>
+    <a href="{% url 'crear_producto' %}" class="btn btn-primary">+ Nuevo Producto</a>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for producto in productos %}
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">{{ producto.nombre }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">${{ producto.precio }}</h6>
+                <p class="card-text">{{ producto.descripcion }}</p>
+                <p class="card-text"><small class="text-muted">Stock: {{ producto.stock }}</small></p>
+            </div>
+            <div class="card-footer bg-transparent border-top-0">
+                <a href="{% url 'editar_producto' producto.id %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                <a href="{% url 'eliminar_producto' producto.id %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">No hay productos registrados en el sistema.</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

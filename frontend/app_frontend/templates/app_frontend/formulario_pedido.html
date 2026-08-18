@@ -1,0 +1,50 @@
+{% extends 'app_frontend/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Registrar Nuevo Pedido</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="productos_ids" class="form-label">Seleccionar Productos</label>
+                        <select multiple class="form-select" id="productos_ids" name="productos_ids" style="height: 150px;" required onchange="calcularTotal()">
+                            {% for prod in productos %}
+                                <option value="{{ prod.id }}" data-precio="{{ prod.precio }}">
+                                    {{ prod.nombre }} - ${{ prod.precio }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples productos.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="total" class="form-label">Total Calculado ($)</label>
+                        <input type="number" step="0.01" class="form-control" id="total" name="total" value="0" readonly>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'lista_pedidos' %}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success">Crear Pedido</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calcularTotal() {
+        const select = document.getElementById('productos_ids');
+        let total = 0;
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].selected) {
+                total += parseFloat(select.options[i].getAttribute('data-precio'));
+            }
+        }
+        document.getElementById('total').value = total.toFixed(2);
+    }
+</script>
+{% endblock %}
