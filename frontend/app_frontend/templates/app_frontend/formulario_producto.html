@@ -1,40 +1,94 @@
 {% extends 'app_frontend/base.html' %}
 
+{% block title %}{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %} - Taller 2{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}</h4>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; align-items: start; max-width: 950px; margin: 0 auto;">
+    
+    <!-- Formulario -->
+    <div class="form-container-card" style="margin: 0;">
+        <h2 class="form-header-title">{% if producto %}✏️ Editar Producto{% else %}✨ Nuevo Producto{% endif %}</h2>
+        <p class="form-header-subtitle">Completa los campos para guardar la información directamente en MongoDB.</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group-modern">
+                <label for="nombre" class="form-label-modern">Nombre del Producto</label>
+                <input type="text" class="form-control-modern" id="nombre" name="nombre" value="{{ producto.nombre|default:'' }}" placeholder="Ej. Laptop Dell XPS 15" required oninput="actualizarPreview()">
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="nombre" class="form-label">Nombre del Producto</label>
-                        <input type="text" class="form-control" id="nombre" name="nombre" value="{{ producto.nombre|default:'' }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción</label>
-                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3">{{ producto.descripcion|default:'' }}</textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="precio" class="form-label">Precio ($)</label>
-                            <input type="number" step="0.01" class="form-control" id="precio" name="precio" value="{{ producto.precio|default:'' }}" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="stock" class="form-label">Stock</label>
-                            <input type="number" class="form-control" id="stock" name="stock" value="{{ producto.stock|default:'' }}" required>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <a href="{% url 'lista_productos' %}" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-success">Guardar Producto</button>
-                    </div>
-                </form>
+
+            <div class="form-group-modern">
+                <label for="descripcion" class="form-label-modern">Descripción</label>
+                <textarea class="form-control-modern" id="descripcion" name="descripcion" rows="3" placeholder="Detalles o especificaciones del producto..." oninput="actualizarPreview()">{{ producto.descripcion|default:'' }}</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group-modern">
+                    <label for="precio" class="form-label-modern">Precio ($)</label>
+                    <input type="number" step="0.01" class="form-control-modern" id="precio" name="precio" value="{{ producto.precio|default:'' }}" placeholder="0.00" required oninput="actualizarPreview()">
+                </div>
+                <div class="form-group-modern">
+                    <label for="stock" class="form-label-modern">Stock (Uds)</label>
+                    <input type="number" class="form-control-modern" id="stock" name="stock" value="{{ producto.stock|default:'' }}" placeholder="10" required oninput="actualizarPreview()">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.75rem;">
+                <a href="{% url 'lista_productos' %}" class="btn-modern btn-secondary-modern">Cancelar</a>
+                <button type="submit" class="btn-modern btn-primary-modern">
+                    💾 Guardar en MongoDB
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Live Preview Card -->
+    <div>
+        <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+            👁️ Vista Previa en Vivo
+        </div>
+        <div class="product-card" style="box-shadow: var(--shadow-md);">
+            <div>
+                <div class="card-top">
+                    <h3 class="product-title" id="previewNombre">{{ producto.nombre|default:"Nombre del Producto" }}</h3>
+                    <span class="product-price" id="previewPrecio">${{ producto.precio|default:"0.00" }}</span>
+                </div>
+                <p class="product-desc" id="previewDesc">{{ producto.descripcion|default:"Aquí se verá la descripción de tu producto en tiempo real." }}</p>
+            </div>
+
+            <div class="card-bottom-meta">
+                <span class="stock-tag in-stock" id="previewStock">
+                    ● Stock: {{ producto.stock|default:"0" }} uds
+                </span>
+                <span style="font-size: 0.78rem; color: var(--text-light); font-weight: 600;">Vista previa</span>
             </div>
         </div>
     </div>
+
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function actualizarPreview() {
+        const nombre = document.getElementById('nombre').value;
+        const desc = document.getElementById('descripcion').value;
+        const precio = document.getElementById('precio').value;
+        const stock = document.getElementById('stock').value;
+
+        document.getElementById('previewNombre').innerText = nombre.trim() ? nombre : "Nombre del Producto";
+        document.getElementById('previewDesc').innerText = desc.trim() ? desc : "Aquí se verá la descripción de tu producto en tiempo real.";
+        document.getElementById('previewPrecio').innerText = precio ? "$" + parseFloat(precio).toFixed(2) : "$0.00";
+        
+        const stockTag = document.getElementById('previewStock');
+        const stockVal = parseInt(stock) || 0;
+        stockTag.innerText = "● Stock: " + stockVal + " uds";
+        
+        if (stockVal > 5) {
+            stockTag.className = "stock-tag in-stock";
+        } else {
+            stockTag.className = "stock-tag low-stock";
+        }
+    }
+</script>
 {% endblock %}

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from models import Producto, Pedido
-from database import database
+from app.models.schemas import Producto, Pedido
+from app.core.database import database
 from bson import ObjectId
 from typing import List
 
@@ -8,6 +8,15 @@ app = FastAPI(title="API REST - Clase 2", description="CRUD de productos y regis
 
 productos_collection = database.productos
 pedidos_collection = database.pedidos
+
+@app.get("/", tags=["General"])
+async def inicio():
+    return {
+        "mensaje": "API FastAPI con MongoDB activa y funcionando",
+        "documentacion": "/docs",
+        "productos": "/productos/",
+        "pedidos": "/pedidos/"
+    }
 
 # Helper function para convertir ObjectId a str
 def serialize_doc(doc):

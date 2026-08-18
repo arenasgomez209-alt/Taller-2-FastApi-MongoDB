@@ -7,13 +7,16 @@ load_dotenv()
 
 
 MONGODB_URL = os.getenv("MONGODB_URL")
+if MONGODB_URL:
+    MONGODB_URL = MONGODB_URL.strip()
 
-#Inicializar el cliente de  MongoDB
+MONGODB_DB = os.getenv("MONGODB_DB", "ambiente502").strip()
+
+# Inicializar el cliente de MongoDB
 client = AsyncIOMotorClient(MONGODB_URL)
 
-#seleccionar la base de datos(Se creara automaticamente si no existe)
-
-database = client.ambiente502
+# Seleccionar la base de datos (se creará automáticamente si no existe)
+database = client[MONGODB_DB]
 
 #Seleccion la conexion se creara automaticante si no existe
 

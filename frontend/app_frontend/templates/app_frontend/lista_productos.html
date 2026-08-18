@@ -1,31 +1,169 @@
 {% extends 'app_frontend/base.html' %}
 
+{% block title %}Catálogo de Productos - Taller 2{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Catálogo de Productos</h2>
-    <a href="{% url 'crear_producto' %}" class="btn btn-primary">+ Nuevo Producto</a>
+
+<!-- Metrics KPI Cards -->
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-icon-box metric-icon-blue">📦</div>
+        <div class="metric-data">
+            <h4 id="total-prods-count">{{ productos|length }}</h4>
+            <p>Productos Registrados</p>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon-box metric-icon-green">📊</div>
+        <div class="metric-data">
+            <h4 id="total-stock-count">0</h4>
+            <p>Unidades en Stock</p>
+        </div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon-box metric-icon-purple">💎</div>
+        <div class="metric-data">
+            <h4 id="avg-price">$0.00</h4>
+            <p>Precio Promedio</p>
+        </div>
+    </div>
 </div>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
+<!-- Toolbar: Search, Filters & Action Button -->
+<div class="toolbar-card">
+    <div class="search-input-group">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre o descripción..." oninput="filtrarProductos()">
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <select id="sortFilter" class="filter-select" onchange="filtrarProductos()">
+            <option value="default">Ordenar por: Defecto</option>
+            <option value="price-asc">Precio: Menor a Mayor</option>
+            <option value="price-desc">Precio: Mayor a Menor</option>
+            <option value="stock-desc">Mayor Stock</option>
+        </select>
+
+        <a href="{% url 'crear_producto' %}" class="btn-modern btn-primary-modern">
+            <span>+</span> Nuevo Producto
+        </a>
+    </div>
+</div>
+
+<!-- Products Grid -->
+<div class="products-grid" id="productsGrid">
     {% for producto in productos %}
-    <div class="col">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title">{{ producto.nombre }}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">${{ producto.precio }}</h6>
-                <p class="card-text">{{ producto.descripcion }}</p>
-                <p class="card-text"><small class="text-muted">Stock: {{ producto.stock }}</small></p>
+    <div class="product-card" 
+         data-nombre="{{ producto.nombre|lower }}" 
+         data-desc="{{ producto.descripcion|default:''|lower }}" 
+         data-precio="{{ producto.precio }}" 
+         data-stock="{{ producto.stock }}">
+        
+        <div>
+            <div class="card-top">
+                <h3 class="product-title">{{ producto.nombre }}</h3>
+                <span class="product-price">${{ producto.precio }}</span>
             </div>
-            <div class="card-footer bg-transparent border-top-0">
-                <a href="{% url 'editar_producto' producto.id %}" class="btn btn-sm btn-outline-secondary">Editar</a>
-                <a href="{% url 'eliminar_producto' producto.id %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+            <p class="product-desc">{{ producto.descripcion|default:"Sin descripción detallada disponible." }}</p>
+        </div>
+
+        <div class="card-bottom-meta">
+            <span class="stock-tag {% if producto.stock > 5 %}in-stock{% else %}low-stock{% endif %}">
+                ● Stock: {{ producto.stock }} uds
+            </span>
+            <div style="display: flex; gap: 0.4rem;">
+                <a href="{% url 'editar_producto' producto.id %}" class="btn-outline-action" title="Editar">
+                    ✏️ Editar
+                </a>
+                <a href="{% url 'eliminar_producto' producto.id %}" class="btn-outline-action btn-outline-danger-action" title="Eliminar">
+                    🗑️
+                </a>
             </div>
         </div>
     </div>
     {% empty %}
-    <div class="col-12">
-        <div class="alert alert-info">No hay productos registrados en el sistema.</div>
+    <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state-icon">📦</div>
+        <h3>No hay productos registrados en MongoDB</h3>
+        <p>Comienza agregando tu primer producto para verlo en el catálogo.</p>
+        <a href="{% url 'crear_producto' %}" class="btn-modern btn-primary-modern">+ Crear Primer Producto</a>
     </div>
     {% endfor %}
 </div>
+
+<div id="noResultsMsg" class="empty-state" style="display: none;">
+    <div class="empty-state-icon">🔎</div>
+    <h3>No se encontraron resultados</h3>
+    <p>Prueba con otro término de búsqueda o cambia los filtros seleccionados.</p>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Calcular KPIs iniciales
+    function calculateKPIs() {
+        const cards = document.querySelectorAll('.product-card');
+        let totalStock = 0;
+        let totalPrice = 0;
+        let count = cards.length;
+
+        cards.forEach(card => {
+            totalStock += parseInt(card.dataset.stock) || 0;
+            totalPrice += parseFloat(card.dataset.precio) || 0;
+        });
+
+        document.getElementById('total-stock-count').innerText = totalStock;
+        document.getElementById('avg-price').innerText = count > 0 ? '$' + (totalPrice / count).toFixed(2) : '$0.00';
+    }
+
+    // Filtrar y ordenar productos en tiempo real
+    function filtrarProductos() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const sortBy = document.getElementById('sortFilter').value;
+        const grid = document.getElementById('productsGrid');
+        const cards = Array.from(document.querySelectorAll('.product-card'));
+        const noResults = document.getElementById('noResultsMsg');
+
+        let visibleCount = 0;
+
+        // Filtrado por texto
+        cards.forEach(card => {
+            const nombre = card.dataset.nombre;
+            const desc = card.dataset.desc;
+            const matches = nombre.includes(query) || desc.includes(query);
+
+            if (matches) {
+                card.style.display = 'flex';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Ordenamiento
+        if (sortBy !== 'default') {
+            cards.sort((a, b) => {
+                const precioA = parseFloat(a.dataset.precio);
+                const precioB = parseFloat(b.dataset.precio);
+                const stockA = parseInt(a.dataset.stock);
+                const stockB = parseInt(b.dataset.stock);
+
+                if (sortBy === 'price-asc') return precioA - precioB;
+                if (sortBy === 'price-desc') return precioB - precioA;
+                if (sortBy === 'stock-desc') return stockB - stockA;
+                return 0;
+            });
+
+            cards.forEach(card => grid.appendChild(card));
+        }
+
+        if (cards.length > 0) {
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+            grid.style.display = visibleCount === 0 ? 'none' : 'grid';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', calculateKPIs);
+</script>
 {% endblock %}

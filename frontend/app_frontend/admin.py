@@ -1,3 +1,1 @@
-from django.contrib import admin
-
-# Register your models here.
+# No admin site needed for API consumer frontend
