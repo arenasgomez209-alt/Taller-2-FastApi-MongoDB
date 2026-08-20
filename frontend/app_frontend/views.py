@@ -126,7 +126,7 @@ def crear_pedido(request):
     
     productos = []
     try:
-        response = requests.get(f"{API_URL}/productos/", timeout=5)
+        response = requests.get(f"{API_URL}/productos/", timeout=60)
         productos = response.json() if response.status_code == 200 else []
         for p in productos:
             p['id'] = p.pop('_id', None)
