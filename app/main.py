@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from app.models.schemas import Producto, Pedido
-from app.core.database import database
+from models.schemas import Producto, Pedido
+from core.database import database
 from bson import ObjectId
 from typing import List
 
