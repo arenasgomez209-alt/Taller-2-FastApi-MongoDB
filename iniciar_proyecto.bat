@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title Iniciador - Taller 2 FastAPI y MongoDB
 echo ========================================================
 echo   INICIANDO TALLER 2 (FASTAPI + MONGODB + DJANGO)
@@ -6,12 +7,12 @@ echo ========================================================
 echo.
 
 echo 1. Levantando Backend FastAPI en el puerto 8000...
-start "FastAPI Backend (Puerto 8000)" cmd /k "uvicorn app.main:app --reload --port 8000"
+start "FastAPI Backend (Puerto 8000)" cmd /k "if exist .venv\Scripts\activate call .venv\Scripts\activate && uvicorn app.main:app --reload --port 8000"
 
 timeout /t 2 /nobreak >nul
 
 echo 2. Levantando Frontend Django en el puerto 8080...
-start "Django Frontend (Puerto 8080)" cmd /k "cd frontend && python manage.py runserver 8080"
+start "Django Frontend (Puerto 8080)" cmd /k "if exist .venv\Scripts\activate call .venv\Scripts\activate && cd frontend && python manage.py runserver 8080"
 
 timeout /t 2 /nobreak >nul
 

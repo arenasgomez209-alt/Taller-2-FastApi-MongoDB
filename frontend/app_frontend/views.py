@@ -1,7 +1,8 @@
+import os
 import requests
 from django.shortcuts import render, redirect
 
-API_URL = "[https://taller-2-fastapi-mongodb-1.onrender.com](https://taller-2-fastapi-mongodb-1.onrender.com)"
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 
 def lista_productos(request):

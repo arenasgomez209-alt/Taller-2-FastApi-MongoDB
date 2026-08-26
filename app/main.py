@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from models.schemas import Producto, Pedido
-from core.database import database
+from app.models.schemas import Producto, Pedido
+from app.core.database import database
 from bson import ObjectId
 from typing import List
 
@@ -73,6 +73,30 @@ async def eliminar_producto(id: str):
 
 @app.post("/pedidos/", tags=["Pedidos"])
 async def registrar_pedido(pedido: Pedido):
+    if not pedido.productos_ids:
+        raise HTTPException(status_code=400, detail="El pedido debe contener al menos un producto.")
+    
+    # Validar existencia y stock de cada producto
+    for prod_id in pedido.productos_ids:
+        if not ObjectId.is_valid(prod_id):
+            raise HTTPException(status_code=400, detail=f"ID de producto inválido: {prod_id}")
+        
+        producto = await productos_collection.find_one({"_id": ObjectId(prod_id)})
+        if not producto:
+            raise HTTPException(status_code=404, detail=f"Producto con ID {prod_id} no encontrado.")
+        
+        if producto.get("stock", 0) <= 0:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"El producto '{producto.get('nombre')}' no tiene stock disponible (Agotado)."
+            )
+        
+        # Descontar 1 unidad del stock en MongoDB
+        await productos_collection.update_one(
+            {"_id": ObjectId(prod_id)},
+            {"$inc": {"stock": -1}}
+        )
+
     nuevo_pedido = await pedidos_collection.insert_one(pedido.model_dump())
     pedido_creado = await pedidos_collection.find_one({"_id": nuevo_pedido.inserted_id})
     return serialize_doc(pedido_creado)
@@ -81,3 +105,4 @@ async def registrar_pedido(pedido: Pedido):
 async def obtener_pedidos():
     pedidos = await pedidos_collection.find().to_list(100)
     return [serialize_doc(p) for p in pedidos]
+

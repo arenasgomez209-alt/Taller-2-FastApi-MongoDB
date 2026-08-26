@@ -1,44 +1,64 @@
 {% extends 'app_frontend/base.html' %}
 
-{% block title %}Crear Pedido - Taller 2{% endblock %}
+{% block title %}Crear Pedido - Taller 2 FastAPI & MongoDB{% endblock %}
 
 {% block content %}
-<div class="form-container-card" style="max-width: 800px;">
-    <h2 class="form-header-title">🛒 Registrar Nuevo Pedido</h2>
-    <p class="form-header-subtitle">Selecciona los productos haciendo clic en ellos. El total se calculará de forma automática.</p>
+
+<!-- Breadcrumbs -->
+<div class="breadcrumb-nav">
+    <a href="{% url 'lista_pedidos' %}">Pedidos</a>
+    <span>›</span>
+    <span>Nuevo Pedido</span>
+</div>
+
+<div class="form-container-card" style="max-width: 860px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+        <div>
+            <h2 class="form-header-title" style="margin-bottom: 0.25rem;">🛒 Registrar Nuevo Pedido</h2>
+            <p class="form-header-subtitle" style="margin-bottom: 0;">Selecciona los productos que formarán parte del pedido. El total se sincronizará automáticamente.</p>
+        </div>
+        <span id="selectedCountBadge" class="backend-badge" style="font-size: 0.85rem;">
+            0 productos seleccionados
+        </span>
+    </div>
 
     <form method="POST" id="orderForm">
         {% csrf_token %}
 
-        <!-- Interactive Product Selection Grid -->
+        <!-- Hidden Native Multiple Select for standard POST data transmission -->
+        <select multiple id="productos_ids" name="productos_ids" style="display: none;" required>
+            {% for prod in productos %}
+                <option value="{{ prod.id }}" data-nombre="{{ prod.nombre }}" data-precio="{{ prod.precio }}">{{ prod.nombre }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- Product Selector Grid -->
         <div class="form-group-modern">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <label class="form-label-modern" style="margin-bottom: 0;">Selecciona los Productos disponibles:</label>
-                <span id="selectedCountBadge" style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">0 seleccionados</span>
-            </div>
+            <label class="form-label-modern">
+                <span>Catálogo de Productos Disponibles:</span>
+                <span class="form-label-hint">Haz clic sobre cada producto para incluirlo</span>
+            </label>
 
-            <!-- Hidden native select for standard POST submission -->
-            <select multiple id="productos_ids" name="productos_ids" style="display: none;" required>
-                {% for prod in productos %}
-                    <option value="{{ prod.id }}" data-precio="{{ prod.precio }}">{{ prod.nombre }}</option>
-                {% endfor %}
-            </select>
-
-            <!-- Visual Interactive Selector -->
             <div class="order-products-selector">
                 {% for prod in productos %}
-                <div class="order-product-item" id="item-{{ prod.id }}" onclick="toggleProduct('{{ prod.id }}', {{ prod.precio }})">
+                <div class="order-product-item {% if prod.stock <= 0 %}out-of-stock-item{% endif %}" 
+                     id="item-{{ prod.id }}" 
+                     {% if prod.stock > 0 %}onclick="toggleProducto('{{ prod.id }}', {{ prod.precio }})"{% else %}title="Este producto no tiene stock disponible"{% endif %}>
                     <div class="order-product-info">
                         <h6>{{ prod.nombre }}</h6>
-                        <span>${{ prod.precio }} · Stock: {{ prod.stock }}</span>
+                        <span>${{ prod.precio }} · {% if prod.stock > 0 %}Stock: {{ prod.stock }} uds{% else %}<strong style="color: #ef4444;">Sin Stock (Agotado)</strong>{% endif %}</span>
                     </div>
-                    <div id="check-{{ prod.id }}" style="font-size: 1.1rem; color: var(--text-light);">
-                        ⚪
+                    <div id="check-{{ prod.id }}" style="font-size: 1.2rem; transition: transform 0.2s ease;">
+                        {% if prod.stock > 0 %}⚪{% else %}🚫{% endif %}
                     </div>
                 </div>
                 {% empty %}
-                <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
-                    No hay productos registrados. <a href="{% url 'crear_producto' %}">Crea un producto primero</a>.
+                <div style="grid-column: 1 / -1; text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📦</div>
+                    <strong>No hay productos registrados en MongoDB.</strong>
+                    <div style="margin-top: 0.5rem;">
+                        <a href="{% url 'crear_producto' %}" class="btn-modern btn-primary-modern">+ Crear Producto Primero</a>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -47,21 +67,25 @@
         <!-- Total Banner Display -->
         <div class="order-total-banner">
             <div>
-                <span>Total a Pagar</span>
-                <p style="margin: 0; font-size: 0.8rem; color: #a5b4fc;">Calculado en tiempo real</p>
+                <span>Total a Pagar (USD)</span>
+                <p style="margin: 0.2rem 0 0 0; font-size: 0.82rem; color: #c7d2fe;">Calculado dinámicamente según los productos seleccionados</p>
             </div>
             <h3 id="displayTotal">$0.00</h3>
             <input type="hidden" id="total" name="total" value="0">
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-            <a href="{% url 'lista_pedidos' %}" class="btn-modern btn-secondary-modern">Cancelar</a>
+        <!-- Action Buttons -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.85rem;">
+            <a href="{% url 'lista_pedidos' %}" class="btn-modern btn-secondary-modern">
+                Cancelar
+            </a>
             <button type="submit" class="btn-modern btn-primary-modern" id="submitBtn" disabled>
-                ✨ Confirmar Pedido
+                ✨ Confirmar y Registrar Pedido
             </button>
         </div>
     </form>
 </div>
+
 {% endblock %}
 
 {% block extra_scripts %}
@@ -69,7 +93,7 @@
     const selectedProducts = new Set();
     const selectElement = document.getElementById('productos_ids');
 
-    function toggleProduct(id, precio) {
+    function toggleProducto(id, precio) {
         const itemCard = document.getElementById(`item-${id}`);
         const checkIcon = document.getElementById(`check-${id}`);
         const opt = selectElement.querySelector(`option[value="${id}"]`);
@@ -78,18 +102,20 @@
             selectedProducts.delete(id);
             itemCard.classList.remove('selected');
             checkIcon.innerText = '⚪';
+            checkIcon.style.transform = 'scale(1)';
             if (opt) opt.selected = false;
         } else {
             selectedProducts.add(id);
             itemCard.classList.add('selected');
             checkIcon.innerText = '✅';
+            checkIcon.style.transform = 'scale(1.2)';
             if (opt) opt.selected = true;
         }
 
-        recalculateTotal();
+        recalcularTotal();
     }
 
-    function recalculateTotal() {
+    function recalcularTotal() {
         let total = 0;
         for (let i = 0; i < selectElement.options.length; i++) {
             const option = selectElement.options[i];
@@ -104,7 +130,6 @@
         const count = selectedProducts.size;
         document.getElementById('selectedCountBadge').innerText = `${count} producto${count !== 1 ? 's' : ''} seleccionado${count !== 1 ? 's' : ''}`;
         
-        // Habilitar o deshabilitar botón
         const submitBtn = document.getElementById('submitBtn');
         if (count > 0) {
             submitBtn.removeAttribute('disabled');

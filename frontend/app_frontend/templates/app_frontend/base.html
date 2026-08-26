@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Tienda FastAPI & MongoDB{% endblock %}</title>
+    <title>{% block title %}Taller 2 · FastAPI + MongoDB + Django{% endblock %}</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
@@ -19,14 +19,17 @@
         <div class="nav-container">
             <a href="{% url 'lista_productos' %}" class="brand-logo">
                 <div class="brand-icon">📦</div>
-                <span>Taller 2 APIFAST</span>
+                <div class="brand-title-wrap">
+                    <span class="brand-title">Catálogo Pro</span>
+                    <span class="brand-subtitle">FastAPI & MongoDB</span>
+                </div>
             </a>
 
             <nav>
                 <ul class="nav-links">
                     <li>
                         <a href="{% url 'lista_productos' %}" class="nav-link-custom {% if request.resolver_match.url_name in 'lista_productos,crear_producto,editar_producto,eliminar_producto' %}active{% endif %}">
-                            <span>🏷️</span> Productos
+                            <span>🏷️</span> Catálogo
                         </a>
                     </li>
                     <li>
@@ -39,7 +42,7 @@
 
             <div class="backend-badge">
                 <span class="status-dot"></span>
-                <span>FastAPI + MongoDB</span>
+                <span>API Conectada</span>
             </div>
         </div>
     </header>
@@ -47,11 +50,11 @@
     <!-- Main Content Area -->
     <main class="main-wrapper">
         {% if error %}
-        <div style="background: #fef2f2; border: 1.5px solid #fecaca; color: #991b1b; padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: var(--shadow-sm);">
-            <span style="font-size: 1.5rem;">⚠️</span>
+        <div style="background: #fef2f2; border: 1.5px solid #fecaca; color: #991b1b; padding: 1.15rem 1.4rem; border-radius: var(--radius-md); margin-bottom: 1.75rem; display: flex; align-items: center; gap: 0.9rem; box-shadow: var(--shadow-sm);">
+            <span style="font-size: 1.6rem;">⚠️</span>
             <div>
-                <strong>Aviso de Conexión:</strong>
-                <div>{{ error }}</div>
+                <strong style="font-size: 0.95rem;">Aviso de Conexión:</strong>
+                <div style="font-size: 0.88rem; margin-top: 0.2rem; color: #7f1d1d;">{{ error }}</div>
             </div>
         </div>
         {% endif %}
@@ -59,6 +62,37 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Global Helper Scripts -->
+    <script>
+        function showToast(message, icon = '✨') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast-message';
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 20);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function copyToClipboard(text, label = 'ID') {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`${label} copiado al portapapeles: ${text}`, '📋');
+            }).catch(() => {
+                showToast('No se pudo copiar el texto', '⚠️');
+            });
+        }
+    </script>
 
     {% block extra_scripts %}
     {% endblock %}

@@ -1,43 +1,57 @@
 {% extends 'app_frontend/base.html' %}
 
-{% block title %}Registro de Pedidos - Taller 2{% endblock %}
+{% block title %}Registro de Pedidos - Taller 2 FastAPI & MongoDB{% endblock %}
 
 {% block content %}
 
-<!-- Header & Actions -->
+<!-- Hero Header Section -->
+<div class="page-hero">
+    <div class="page-hero-text">
+        <h1>Historial de <span class="gradient-text">Pedidos</span></h1>
+        <p>Consulta las órdenes generadas y almacenadas en la base de datos de MongoDB.</p>
+    </div>
+    <a href="{% url 'crear_pedido' %}" class="btn-modern btn-primary-modern">
+        <span>+</span> Nuevo Pedido
+    </a>
+</div>
+
+<!-- Toolbar: Search -->
 <div class="toolbar-card">
     <div class="search-input-group">
         <span class="search-icon">🔍</span>
-        <input type="text" id="orderSearchInput" class="search-input" placeholder="Buscar por ID de pedido o fecha..." oninput="filtrarPedidos()">
+        <input type="text" id="orderSearchInput" class="search-input" placeholder="Buscar por ID de pedido o fecha (YYYY-MM-DD)..." oninput="filtrarPedidos()">
     </div>
 
-    <div style="display: flex; gap: 0.75rem; align-items: center;">
-        <a href="{% url 'crear_pedido' %}" class="btn-modern btn-primary-modern">
-            <span>+</span> Nuevo Pedido
-        </a>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span class="backend-badge" id="ordersCounterBadge">
+            {{ pedidos|length }} pedidos registrados
+        </span>
     </div>
 </div>
 
-<!-- Orders Table -->
+<!-- Orders Table Card -->
 <div class="table-card">
     <div style="overflow-x: auto;">
         <table class="modern-table" id="ordersTable">
             <thead>
                 <tr>
                     <th>ID Pedido (MongoDB)</th>
-                    <th>Fecha de Registro</th>
+                    <th>Fecha de Creación</th>
                     <th>Productos Incluidos</th>
-                    <th style="text-align: right;">Total Cobrado</th>
+                    <th style="text-align: right;">Total Liquidado</th>
                 </tr>
             </thead>
             <tbody>
                 {% for pedido in pedidos %}
                 <tr class="order-row" data-id="{{ pedido.id|lower }}" data-fecha="{{ pedido.fecha|lower }}">
                     <td>
-                        <span class="id-badge">🆔 {{ pedido.id }}</span>
+                        <button class="id-badge-interactive" onclick="copyToClipboard('{{ pedido.id }}', 'ID de Pedido')" title="Copiar ID de MongoDB">
+                            <span>🆔 {{ pedido.id }}</span>
+                            <span>📋</span>
+                        </button>
                     </td>
                     <td>
-                        <span style="font-size: 0.88rem; color: var(--text-muted);">
+                        <span style="font-size: 0.88rem; color: var(--text-muted); font-weight: 600;">
                             📅 {{ pedido.fecha|slice:":19" }}
                         </span>
                     </td>
@@ -47,18 +61,18 @@
                         </span>
                     </td>
                     <td style="text-align: right;">
-                        <span style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">
+                        <span style="font-size: 1.15rem; font-weight: 800; color: var(--primary);">
                             ${{ pedido.total }}
                         </span>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 3rem 1rem;">
-                        <div class="empty-state-icon" style="font-size: 2.5rem; margin-bottom: 0.5rem;">📋</div>
-                        <h4 style="margin: 0 0 0.5rem 0; font-weight: 700;">No hay pedidos registrados</h4>
-                        <p style="color: var(--text-muted); margin-bottom: 1.25rem;">Crea tu primer pedido asociando los productos disponibles.</p>
-                        <a href="{% url 'crear_pedido' %}" class="btn-modern btn-primary-modern">+ Registrar Pedido</a>
+                    <td colspan="4" style="text-align: center; padding: 3.5rem 1rem;">
+                        <div class="empty-state-icon">📋</div>
+                        <h3 style="margin: 0 0 0.5rem 0; font-weight: 800; font-size: 1.3rem;">No hay pedidos registrados</h3>
+                        <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem;">Crea tu primer pedido asociando los productos disponibles en tu catálogo.</p>
+                        <a href="{% url 'crear_pedido' %}" class="btn-modern btn-primary-modern">+ Registrar Primer Pedido</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -67,10 +81,11 @@
     </div>
 </div>
 
+<!-- No Results Feedback -->
 <div id="noOrdersFound" class="empty-state" style="display: none; margin-top: 1.5rem;">
     <div class="empty-state-icon">🔎</div>
     <h3>No se encontraron pedidos</h3>
-    <p>Intenta buscar con otro ID o fecha.</p>
+    <p>No coincide ningún pedido con el criterio de búsqueda ingresado.</p>
 </div>
 
 {% endblock %}

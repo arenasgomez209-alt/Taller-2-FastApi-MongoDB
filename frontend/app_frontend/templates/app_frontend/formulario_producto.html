@@ -1,94 +1,236 @@
 {% extends 'app_frontend/base.html' %}
 
-{% block title %}{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %} - Taller 2{% endblock %}
+{% block title %}{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %} - Taller 2 FastAPI & MongoDB{% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; align-items: start; max-width: 950px; margin: 0 auto;">
+
+<!-- Breadcrumb Navigation -->
+<div class="breadcrumb-nav">
+    <a href="{% url 'lista_productos' %}">Catálogo</a>
+    <span>›</span>
+    <span>{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2.25rem; align-items: start; max-width: 1050px; margin: 0 auto;">
     
-    <!-- Formulario -->
+    <!-- Form Card -->
     <div class="form-container-card" style="margin: 0;">
-        <h2 class="form-header-title">{% if producto %}✏️ Editar Producto{% else %}✨ Nuevo Producto{% endif %}</h2>
-        <p class="form-header-subtitle">Completa los campos para guardar la información directamente en MongoDB.</p>
+        <h2 class="form-header-title">{% if producto %}✏️ Editar Producto{% else %}✨ Agregar Nuevo Producto{% endif %}</h2>
+        <p class="form-header-subtitle">Ingresa la información del producto. Los cambios se guardarán directamente en la colección de MongoDB.</p>
 
         <form method="POST">
             {% csrf_token %}
+
+            <!-- Nombre -->
             <div class="form-group-modern">
-                <label for="nombre" class="form-label-modern">Nombre del Producto</label>
-                <input type="text" class="form-control-modern" id="nombre" name="nombre" value="{{ producto.nombre|default:'' }}" placeholder="Ej. Laptop Dell XPS 15" required oninput="actualizarPreview()">
+                <label for="nombre" class="form-label-modern">
+                    <span>Nombre del Producto</span>
+                    <span class="form-label-hint">Obligatorio</span>
+                </label>
+                <div class="input-with-icon-wrapper">
+                    <span class="input-leading-icon">🏷️</span>
+                    <input type="text" 
+                           class="form-control-modern" 
+                           id="nombre" 
+                           name="nombre" 
+                           value="{{ producto.nombre|default:'' }}" 
+                           placeholder="Ej. Laptop Dell XPS 15 o Auriculares Sony" 
+                           required 
+                           autocomplete="off"
+                           oninput="actualizarLivePreview()">
+                </div>
             </div>
 
+            <!-- Descripción -->
             <div class="form-group-modern">
-                <label for="descripcion" class="form-label-modern">Descripción</label>
-                <textarea class="form-control-modern" id="descripcion" name="descripcion" rows="3" placeholder="Detalles o especificaciones del producto..." oninput="actualizarPreview()">{{ producto.descripcion|default:'' }}</textarea>
+                <label for="descripcion" class="form-label-modern">
+                    <span>Descripción</span>
+                    <span class="form-label-hint" id="charCount">0/200</span>
+                </label>
+                <div class="input-with-icon-wrapper">
+                    <textarea class="form-control-modern" 
+                              id="descripcion" 
+                              name="descripcion" 
+                              rows="3" 
+                              maxlength="200"
+                              placeholder="Detalles, características principales o especificaciones..." 
+                              oninput="actualizarLivePreview()">{{ producto.descripcion|default:'' }}</textarea>
+                </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- Precio y Stock en 2 columnas -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                <!-- Precio -->
                 <div class="form-group-modern">
-                    <label for="precio" class="form-label-modern">Precio ($)</label>
-                    <input type="number" step="0.01" class="form-control-modern" id="precio" name="precio" value="{{ producto.precio|default:'' }}" placeholder="0.00" required oninput="actualizarPreview()">
+                    <label for="precio" class="form-label-modern">
+                        <span>Precio ($)</span>
+                        <span class="form-label-hint">USD</span>
+                    </label>
+                    <div class="input-with-icon-wrapper">
+                        <span class="input-leading-icon">💵</span>
+                        <input type="number" 
+                               step="0.01" 
+                               min="0"
+                               class="form-control-modern" 
+                               id="precio" 
+                               name="precio" 
+                               value="{{ producto.precio|default:'' }}" 
+                               placeholder="299.99" 
+                               required 
+                               oninput="actualizarLivePreview()">
+                    </div>
                 </div>
+
+                <!-- Stock -->
                 <div class="form-group-modern">
-                    <label for="stock" class="form-label-modern">Stock (Uds)</label>
-                    <input type="number" class="form-control-modern" id="stock" name="stock" value="{{ producto.stock|default:'' }}" placeholder="10" required oninput="actualizarPreview()">
+                    <label for="stock" class="form-label-modern">
+                        <span>Stock</span>
+                        <span class="form-label-hint">Unidades</span>
+                    </label>
+                    <div class="input-with-icon-wrapper">
+                        <span class="input-leading-icon">📦</span>
+                        <input type="number" 
+                               min="0"
+                               class="form-control-modern" 
+                               id="stock" 
+                               name="stock" 
+                               value="{{ producto.stock|default:'' }}" 
+                               placeholder="15" 
+                               required 
+                               oninput="actualizarLivePreview()">
+                    </div>
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.75rem;">
-                <a href="{% url 'lista_productos' %}" class="btn-modern btn-secondary-modern">Cancelar</a>
+            <!-- Form Actions -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.85rem; margin-top: 2rem; border-top: 1px solid var(--border-subtle); padding-top: 1.25rem;">
+                <a href="{% url 'lista_productos' %}" class="btn-modern btn-secondary-modern">
+                    Cancelar
+                </a>
                 <button type="submit" class="btn-modern btn-primary-modern">
-                    💾 Guardar en MongoDB
+                    💾 {% if producto %}Actualizar Producto{% else %}Guardar en MongoDB{% endif %}
                 </button>
             </div>
         </form>
     </div>
 
-    <!-- Live Preview Card -->
-    <div>
-        <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
-            👁️ Vista Previa en Vivo
+    <!-- Live Preview Side -->
+    <div class="live-preview-wrapper">
+        <div class="preview-header-label">
+            <span>Vista Previa en Vivo</span>
+            <span class="live-badge-pulse">● EN VIVO</span>
         </div>
-        <div class="product-card" style="box-shadow: var(--shadow-md);">
-            <div>
-                <div class="card-top">
-                    <h3 class="product-title" id="previewNombre">{{ producto.nombre|default:"Nombre del Producto" }}</h3>
-                    <span class="product-price" id="previewPrecio">${{ producto.precio|default:"0.00" }}</span>
+
+        <div class="product-card" style="box-shadow: var(--shadow-md); border-color: rgba(129, 140, 248, 0.4);">
+            <!-- Card Header -->
+            <div class="card-header-bar">
+                <div class="product-avatar-icon" id="previewIcon">📦</div>
+                <div class="id-badge-interactive" style="cursor: default;">
+                    <span>🆔 {% if producto %}{{ producto.id|slice:":8" }}...{% else %}nuevo_doc{% endif %}</span>
                 </div>
-                <p class="product-desc" id="previewDesc">{{ producto.descripcion|default:"Aquí se verá la descripción de tu producto en tiempo real." }}</p>
             </div>
 
-            <div class="card-bottom-meta">
-                <span class="stock-tag in-stock" id="previewStock">
-                    ● Stock: {{ producto.stock|default:"0" }} uds
-                </span>
-                <span style="font-size: 0.78rem; color: var(--text-light); font-weight: 600;">Vista previa</span>
+            <!-- Content -->
+            <div class="card-content-body">
+                <h3 class="product-title" id="previewNombre">{{ producto.nombre|default:"Nombre de Producto de Ejemplo" }}</h3>
+                
+                <div class="price-container">
+                    <span class="price-currency">$</span>
+                    <span class="product-price-val" id="previewPrecio">{{ producto.precio|default:"0.00" }}</span>
+                </div>
+
+                <p class="product-desc" id="previewDesc">{{ producto.descripcion|default:"Aquí se visualizará la descripción que ingreses en el formulario en tiempo real." }}</p>
+            </div>
+
+            <!-- Stock Progress Meter -->
+            <div class="stock-meter-container">
+                <div class="stock-meter-header">
+                    <span>Disponibilidad</span>
+                    <span class="stock-tag in-stock" id="previewStockBadge">
+                        🟢 {{ producto.stock|default:"0" }} uds
+                    </span>
+                </div>
+                <div class="stock-meter-bar">
+                    <div class="stock-meter-fill stock-fill-high" id="previewStockFill" style="width: 50%;"></div>
+                </div>
+            </div>
+
+            <div class="card-footer-actions">
+                <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Simulación de catálogo</span>
+                <span class="btn-outline-action" style="pointer-events: none; opacity: 0.7;">👁️ Ver</span>
             </div>
         </div>
     </div>
 
 </div>
+
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-    function actualizarPreview() {
+    function actualizarLivePreview() {
         const nombre = document.getElementById('nombre').value;
         const desc = document.getElementById('descripcion').value;
         const precio = document.getElementById('precio').value;
         const stock = document.getElementById('stock').value;
 
+        // Character count
+        document.getElementById('charCount').innerText = `${desc.length}/200`;
+
+        // Nombre
         document.getElementById('previewNombre').innerText = nombre.trim() ? nombre : "Nombre del Producto";
-        document.getElementById('previewDesc').innerText = desc.trim() ? desc : "Aquí se verá la descripción de tu producto en tiempo real.";
-        document.getElementById('previewPrecio').innerText = precio ? "$" + parseFloat(precio).toFixed(2) : "$0.00";
-        
-        const stockTag = document.getElementById('previewStock');
-        const stockVal = parseInt(stock) || 0;
-        stockTag.innerText = "● Stock: " + stockVal + " uds";
-        
-        if (stockVal > 5) {
-            stockTag.className = "stock-tag in-stock";
+
+        // Dynamic Avatar Emoji based on Name
+        const nameLower = nombre.toLowerCase();
+        const iconEl = document.getElementById('previewIcon');
+        if (nameLower.includes('laptop') || nameLower.includes('pc') || nameLower.includes('computador')) {
+            iconEl.innerText = '💻';
+        } else if (nameLower.includes('celular') || nameLower.includes('telefono') || nameLower.includes('iphone')) {
+            iconEl.innerText = '📱';
+        } else if (nameLower.includes('audifono') || nameLower.includes('headset') || nameLower.includes('audio')) {
+            iconEl.innerText = '🎧';
+        } else if (nameLower.includes('teclado') || nameLower.includes('mouse')) {
+            iconEl.innerText = '⌨️';
+        } else if (nameLower.includes('monitor') || nameLower.includes('pantalla') || nameLower.includes('tv')) {
+            iconEl.innerText = '🖥️';
+        } else if (nameLower.includes('reloj') || nameLower.includes('watch')) {
+            iconEl.innerText = '⌚';
+        } else if (nameLower.includes('camara') || nameLower.includes('foto')) {
+            iconEl.innerText = '📷';
         } else {
-            stockTag.className = "stock-tag low-stock";
+            iconEl.innerText = '📦';
+        }
+
+        // Descripcion
+        document.getElementById('previewDesc').innerText = desc.trim() ? desc : "Aquí se visualizará la descripción que ingreses en el formulario en tiempo real.";
+
+        // Precio
+        const numPrecio = parseFloat(precio);
+        document.getElementById('previewPrecio').innerText = !isNaN(numPrecio) ? numPrecio.toFixed(2) : "0.00";
+
+        // Stock y Bar
+        const numStock = parseInt(stock) || 0;
+        const stockBadge = document.getElementById('previewStockBadge');
+        const stockFill = document.getElementById('previewStockFill');
+
+        if (numStock > 5) {
+            stockBadge.className = 'stock-tag in-stock';
+            stockBadge.innerText = `🟢 ${numStock} uds`;
+            stockFill.className = 'stock-meter-fill stock-fill-high';
+            stockFill.style.width = Math.min(100, numStock * 5) + '%';
+        } else if (numStock > 0) {
+            stockBadge.className = 'stock-tag low-stock';
+            stockBadge.innerText = `🟡 ${numStock} uds (Bajo)`;
+            stockFill.className = 'stock-meter-fill stock-fill-med';
+            stockFill.style.width = (numStock * 15) + '%';
+        } else {
+            stockBadge.className = 'stock-tag out-of-stock';
+            stockBadge.innerText = `🔴 Agotado`;
+            stockFill.className = 'stock-meter-fill stock-fill-low';
+            stockFill.style.width = '4%';
         }
     }
+
+    document.addEventListener('DOMContentLoaded', actualizarLivePreview);
 </script>
 {% endblock %}

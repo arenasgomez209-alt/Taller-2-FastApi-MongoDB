@@ -1,8 +1,19 @@
 {% extends 'app_frontend/base.html' %}
 
-{% block title %}Catálogo de Productos - Taller 2{% endblock %}
+{% block title %}Catálogo de Productos - Taller 2 FastAPI & MongoDB{% endblock %}
 
 {% block content %}
+
+<!-- Hero Title Section -->
+<div class="page-hero">
+    <div class="page-hero-text">
+        <h1>Catálogo de <span class="gradient-text">Productos</span></h1>
+        <p>Explora, gestiona y sincroniza en tiempo real los productos almacenados en MongoDB a través de la API REST de FastAPI.</p>
+    </div>
+    <a href="{% url 'crear_producto' %}" class="btn-modern btn-primary-modern">
+        <span>✨</span> Agregar Producto
+    </a>
+</div>
 
 <!-- Metrics KPI Cards -->
 <div class="metrics-grid">
@@ -10,7 +21,7 @@
         <div class="metric-icon-box metric-icon-blue">📦</div>
         <div class="metric-data">
             <h4 id="total-prods-count">{{ productos|length }}</h4>
-            <p>Productos Registrados</p>
+            <p>Productos Totales</p>
         </div>
     </div>
     <div class="metric-card">
@@ -27,26 +38,53 @@
             <p>Precio Promedio</p>
         </div>
     </div>
+    <div class="metric-card">
+        <div class="metric-icon-box metric-icon-amber">💰</div>
+        <div class="metric-data">
+            <h4 id="total-inventory-val">$0.00</h4>
+            <p>Valor de Inventario</p>
+        </div>
+    </div>
 </div>
 
-<!-- Toolbar: Search, Filters & Action Button -->
+<!-- Toolbar: Search, Pills, Sorting & View Toggle -->
 <div class="toolbar-card">
-    <div class="search-input-group">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre o descripción..." oninput="filtrarProductos()">
+    <div class="toolbar-left">
+        <!-- Search Input -->
+        <div class="search-input-group">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre o descripción..." oninput="manejarBusqueda()">
+            <button id="clearSearchBtn" class="clear-search-btn" onclick="limpiarBusqueda()" title="Limpiar búsqueda">✕</button>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="filter-pills-group">
+            <button class="filter-pill active" data-filter="all" onclick="filtrarPorPildora('all', this)">Todos</button>
+            <button class="filter-pill" data-filter="in-stock" onclick="filtrarPorPildora('in-stock', this)">🟢 En Stock</button>
+            <button class="filter-pill" data-filter="low-stock" onclick="filtrarPorPildora('low-stock', this)">🟡 Stock Bajo</button>
+            <button class="filter-pill" data-filter="out-of-stock" onclick="filtrarPorPildora('out-of-stock', this)">🔴 Agotados</button>
+        </div>
     </div>
 
-    <div style="display: flex; gap: 0.75rem; align-items: center;">
-        <select id="sortFilter" class="filter-select" onchange="filtrarProductos()">
-            <option value="default">Ordenar por: Defecto</option>
-            <option value="price-asc">Precio: Menor a Mayor</option>
-            <option value="price-desc">Precio: Mayor a Menor</option>
-            <option value="stock-desc">Mayor Stock</option>
+    <div class="toolbar-right">
+        <!-- Sorting -->
+        <select id="sortFilter" class="filter-select" onchange="aplicarFiltrosYOrden()">
+            <option value="default">⚡ Ordenar: Predeterminado</option>
+            <option value="price-asc">💵 Precio: Menor a Mayor</option>
+            <option value="price-desc">💎 Precio: Mayor a Menor</option>
+            <option value="stock-desc">📦 Mayor Stock</option>
+            <option value="name-asc">🔤 Nombre: A - Z</option>
         </select>
 
-        <a href="{% url 'crear_producto' %}" class="btn-modern btn-primary-modern">
-            <span>+</span> Nuevo Producto
-        </a>
+        <!-- View Switcher -->
+        <div class="view-mode-toggle">
+            <button id="gridModeBtn" class="view-mode-btn active" onclick="cambiarModoVista('grid')" title="Vista en Cuadrícula">
+                ▦
+            </button>
+            <button id="listModeBtn" class="view-mode-btn" onclick="cambiarModoVista('list')" title="Vista en Lista">
+                ☰
+            </button>
+        </div>
     </div>
 </div>
 
@@ -54,28 +92,85 @@
 <div class="products-grid" id="productsGrid">
     {% for producto in productos %}
     <div class="product-card" 
+         id="card-{{ producto.id }}"
+         data-id="{{ producto.id }}"
          data-nombre="{{ producto.nombre|lower }}" 
          data-desc="{{ producto.descripcion|default:''|lower }}" 
          data-precio="{{ producto.precio }}" 
          data-stock="{{ producto.stock }}">
         
-        <div>
-            <div class="card-top">
-                <h3 class="product-title">{{ producto.nombre }}</h3>
-                <span class="product-price">${{ producto.precio }}</span>
+        <!-- Header Bar with Avatar & MongoDB ID -->
+        <div class="card-header-bar">
+            <div class="product-avatar-icon">
+                {% if 'laptop' in producto.nombre|lower or 'computador' in producto.nombre|lower or 'pc' in producto.nombre|lower %}
+                    💻
+                {% elif 'celular' in producto.nombre|lower or 'telefono' in producto.nombre|lower or 'smartphone' in producto.nombre|lower or 'iphone' in producto.nombre|lower %}
+                    📱
+                {% elif 'audifono' in producto.nombre|lower or 'headset' in producto.nombre|lower or 'audio' in producto.nombre|lower %}
+                    🎧
+                {% elif 'teclado' in producto.nombre|lower or 'mouse' in producto.nombre|lower %}
+                    ⌨️
+                {% elif 'monitor' in producto.nombre|lower or 'pantalla' in producto.nombre|lower or 'tv' in producto.nombre|lower %}
+                    🖥️
+                {% elif 'camara' in producto.nombre|lower or 'foto' in producto.nombre|lower %}
+                    📷
+                {% elif 'reloj' in producto.nombre|lower or 'watch' in producto.nombre|lower %}
+                    ⌚
+                {% elif 'silla' in producto.nombre|lower or 'mesa' in producto.nombre|lower %}
+                    🪑
+                {% else %}
+                    📦
+                {% endif %}
             </div>
+            <button class="id-badge-interactive" onclick="copyToClipboard('{{ producto.id }}', 'ID de Producto')" title="Copiar ID de MongoDB">
+                <span>🆔 {{ producto.id|slice:":8" }}...</span>
+                <span>📋</span>
+            </button>
+        </div>
+
+        <!-- Body: Title, Price & Description -->
+        <div class="card-content-body">
+            <h3 class="product-title" title="{{ producto.nombre }}">{{ producto.nombre }}</h3>
+            
+            <div class="price-container">
+                <span class="price-currency">$</span>
+                <span class="product-price-val">{{ producto.precio }}</span>
+            </div>
+
             <p class="product-desc">{{ producto.descripcion|default:"Sin descripción detallada disponible." }}</p>
         </div>
 
-        <div class="card-bottom-meta">
-            <span class="stock-tag {% if producto.stock > 5 %}in-stock{% else %}low-stock{% endif %}">
-                ● Stock: {{ producto.stock }} uds
-            </span>
+        <!-- Stock Health Progress Meter -->
+        <div class="stock-meter-container">
+            <div class="stock-meter-header">
+                <span>Disponibilidad</span>
+                <span class="stock-tag {% if producto.stock > 5 %}in-stock{% elif producto.stock > 0 %}low-stock{% else %}out-of-stock{% endif %}">
+                    {% if producto.stock > 5 %}
+                        🟢 {{ producto.stock }} uds
+                    {% elif producto.stock > 0 %}
+                        🟡 {{ producto.stock }} uds (Bajo)
+                    {% else %}
+                        🔴 Agotado
+                    {% endif %}
+                </span>
+            </div>
+            <div class="stock-meter-bar">
+                <div class="stock-meter-fill {% if producto.stock > 5 %}stock-fill-high{% elif producto.stock > 0 %}stock-fill-med{% else %}stock-fill-low{% endif %}" 
+                     style="width: {% if producto.stock > 20 %}100%{% elif producto.stock > 0 %}{{ producto.stock|add:producto.stock|add:15 }}%{% else %}4%{% endif %};">
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="card-footer-actions">
+            <button class="btn-outline-action" onclick="abrirModalDetalle('{{ producto.id }}', '{{ producto.nombre|escapejs }}', '{{ producto.descripcion|default:''|escapejs }}', '{{ producto.precio }}', '{{ producto.stock }}')" title="Ver detalles">
+                👁️ Ver
+            </button>
             <div style="display: flex; gap: 0.4rem;">
-                <a href="{% url 'editar_producto' producto.id %}" class="btn-outline-action" title="Editar">
+                <a href="{% url 'editar_producto' producto.id %}" class="btn-outline-action" title="Editar Producto">
                     ✏️ Editar
                 </a>
-                <a href="{% url 'eliminar_producto' producto.id %}" class="btn-outline-action btn-outline-danger-action" title="Eliminar">
+                <a href="{% url 'eliminar_producto' producto.id %}" class="btn-outline-action btn-outline-danger-action" title="Eliminar de MongoDB">
                     🗑️
                 </a>
             </div>
@@ -85,40 +180,114 @@
     <div class="empty-state" style="grid-column: 1 / -1;">
         <div class="empty-state-icon">📦</div>
         <h3>No hay productos registrados en MongoDB</h3>
-        <p>Comienza agregando tu primer producto para verlo en el catálogo.</p>
+        <p>Comienza agregando tu primer producto para verlo en el catálogo interactivo.</p>
         <a href="{% url 'crear_producto' %}" class="btn-modern btn-primary-modern">+ Crear Primer Producto</a>
     </div>
     {% endfor %}
 </div>
 
+<!-- No Results Feedback Message -->
 <div id="noResultsMsg" class="empty-state" style="display: none;">
     <div class="empty-state-icon">🔎</div>
-    <h3>No se encontraron resultados</h3>
-    <p>Prueba con otro término de búsqueda o cambia los filtros seleccionados.</p>
+    <h3>No se encontraron productos</h3>
+    <p>No hay productos que coincidan con los criterios de búsqueda o filtros seleccionados.</p>
+    <button onclick="limpiarTodosFiltros()" class="btn-modern btn-secondary-modern">Restablecer Filtros</button>
+</div>
+
+<!-- Quick View Modal -->
+<div id="quickViewModal" class="modal-overlay" onclick="cerrarModalFuera(event)">
+    <div class="modal-box">
+        <button class="modal-close-btn" onclick="cerrarModalDetalle()">✕</button>
+        <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.25rem;">
+            <div class="product-avatar-icon" style="width: 50px; height: 50px; font-size: 1.6rem;">📦</div>
+            <div>
+                <h3 id="modalTitulo" class="product-title" style="margin-bottom: 0.15rem; font-size: 1.3rem;">Detalle del Producto</h3>
+                <span id="modalIdBadge" class="id-badge">ID: ...</span>
+            </div>
+        </div>
+
+        <div style="background: var(--bg-subtle); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Precio Unitario:</span>
+                <strong id="modalPrecio" style="font-size: 1.2rem; color: var(--primary); font-weight: 800;">$0.00</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Stock Disponible:</span>
+                <span id="modalStockBadge" class="stock-tag in-stock">0 uds</span>
+            </div>
+            <div>
+                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.35rem;">Descripción:</span>
+                <p id="modalDesc" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin: 0;"></p>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <button class="btn-modern btn-secondary-modern" onclick="cerrarModalDetalle()">Cerrar</button>
+            <a id="modalEditBtn" href="#" class="btn-modern btn-primary-modern">✏️ Editar Producto</a>
+        </div>
+    </div>
 </div>
 
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-    // Calcular KPIs iniciales
-    function calculateKPIs() {
+    let filtroPildoraActual = 'all';
+
+    // Calcular KPIs iniciales (Totales, Promedios, Valor Inventario)
+    function calcularKPIs() {
         const cards = document.querySelectorAll('.product-card');
         let totalStock = 0;
         let totalPrice = 0;
+        let totalInventoryValue = 0;
         let count = cards.length;
 
         cards.forEach(card => {
-            totalStock += parseInt(card.dataset.stock) || 0;
-            totalPrice += parseFloat(card.dataset.precio) || 0;
+            const stock = parseInt(card.dataset.stock) || 0;
+            const price = parseFloat(card.dataset.precio) || 0;
+            totalStock += stock;
+            totalPrice += price;
+            totalInventoryValue += (stock * price);
         });
 
-        document.getElementById('total-stock-count').innerText = totalStock;
+        document.getElementById('total-stock-count').innerText = totalStock.toLocaleString();
         document.getElementById('avg-price').innerText = count > 0 ? '$' + (totalPrice / count).toFixed(2) : '$0.00';
+        document.getElementById('total-inventory-val').innerText = '$' + totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Manejar buscador
+    function manejarBusqueda() {
+        const query = document.getElementById('searchInput').value.trim();
+        document.getElementById('clearSearchBtn').style.display = query ? 'flex' : 'none';
+        aplicarFiltrosYOrden();
+    }
+
+    function limpiarBusqueda() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('clearSearchBtn').style.display = 'none';
+        aplicarFiltrosYOrden();
+    }
+
+    function filtrarPorPildora(tipo, boton) {
+        filtroPildoraActual = tipo;
+        document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+        boton.classList.add('active');
+        aplicarFiltrosYOrden();
+    }
+
+    function limpiarTodosFiltros() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('clearSearchBtn').style.display = 'none';
+        document.getElementById('sortFilter').value = 'default';
+        filtroPildoraActual = 'all';
+        document.querySelectorAll('.filter-pill').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === 'all');
+        });
+        aplicarFiltrosYOrden();
     }
 
     // Filtrar y ordenar productos en tiempo real
-    function filtrarProductos() {
+    function aplicarFiltrosYOrden() {
         const query = document.getElementById('searchInput').value.toLowerCase().trim();
         const sortBy = document.getElementById('sortFilter').value;
         const grid = document.getElementById('productsGrid');
@@ -127,31 +296,40 @@
 
         let visibleCount = 0;
 
-        // Filtrado por texto
         cards.forEach(card => {
-            const nombre = card.dataset.nombre;
-            const desc = card.dataset.desc;
-            const matches = nombre.includes(query) || desc.includes(query);
+            const nombre = card.dataset.nombre || '';
+            const desc = card.dataset.desc || '';
+            const stock = parseInt(card.dataset.stock) || 0;
 
-            if (matches) {
-                card.style.display = 'flex';
+            const coincideTexto = nombre.includes(query) || desc.includes(query);
+            let coincidePildora = true;
+
+            if (filtroPildoraActual === 'in-stock') coincidePildora = stock > 5;
+            else if (filtroPildoraActual === 'low-stock') coincidePildora = stock > 0 && stock <= 5;
+            else if (filtroPildoraActual === 'out-of-stock') coincidePildora = stock === 0;
+
+            if (coincideTexto && coincidePildora) {
+                card.style.display = grid.classList.contains('list-view') ? 'flex' : '';
                 visibleCount++;
             } else {
                 card.style.display = 'none';
             }
         });
 
-        // Ordenamiento
+        // Ordenamiento dinámico
         if (sortBy !== 'default') {
             cards.sort((a, b) => {
                 const precioA = parseFloat(a.dataset.precio);
                 const precioB = parseFloat(b.dataset.precio);
                 const stockA = parseInt(a.dataset.stock);
                 const stockB = parseInt(b.dataset.stock);
+                const nombreA = a.dataset.nombre;
+                const nombreB = b.dataset.nombre;
 
                 if (sortBy === 'price-asc') return precioA - precioB;
                 if (sortBy === 'price-desc') return precioB - precioA;
                 if (sortBy === 'stock-desc') return stockB - stockA;
+                if (sortBy === 'name-asc') return nombreA.localeCompare(nombreB);
                 return 0;
             });
 
@@ -160,10 +338,56 @@
 
         if (cards.length > 0) {
             noResults.style.display = visibleCount === 0 ? 'block' : 'none';
-            grid.style.display = visibleCount === 0 ? 'none' : 'grid';
+            grid.style.display = visibleCount === 0 ? 'none' : '';
         }
     }
 
-    document.addEventListener('DOMContentLoaded', calculateKPIs);
+    // Cambiar Modo Vista (Grid o List)
+    function cambiarModoVista(modo) {
+        const grid = document.getElementById('productsGrid');
+        const gridBtn = document.getElementById('gridModeBtn');
+        const listBtn = document.getElementById('listModeBtn');
+
+        if (modo === 'list') {
+            grid.classList.add('list-view');
+            listBtn.classList.add('active');
+            gridBtn.classList.remove('active');
+        } else {
+            grid.classList.remove('list-view');
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
+        }
+        aplicarFiltrosYOrden();
+    }
+
+    // Modal de Detalle Rápido
+    function abrirModalDetalle(id, nombre, desc, precio, stock) {
+        document.getElementById('modalTitulo').innerText = nombre;
+        document.getElementById('modalIdBadge').innerText = '🆔 ' + id;
+        document.getElementById('modalPrecio').innerText = '$' + parseFloat(precio).toFixed(2);
+        document.getElementById('modalDesc').innerText = desc || 'Sin descripción adicional.';
+        
+        const stockNum = parseInt(stock) || 0;
+        const stockBadge = document.getElementById('modalStockBadge');
+        stockBadge.innerText = stockNum + ' unidades';
+        stockBadge.className = stockNum > 5 ? 'stock-tag in-stock' : (stockNum > 0 ? 'stock-tag low-stock' : 'stock-tag out-of-stock');
+
+        document.getElementById('modalEditBtn').href = `/editar/${id}/`;
+        
+        const modal = document.getElementById('quickViewModal');
+        modal.classList.add('open');
+    }
+
+    function cerrarModalDetalle() {
+        document.getElementById('quickViewModal').classList.remove('open');
+    }
+
+    function cerrarModalFuera(e) {
+        if (e.target.id === 'quickViewModal') {
+            cerrarModalDetalle();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', calcularKPIs);
 </script>
 {% endblock %}
