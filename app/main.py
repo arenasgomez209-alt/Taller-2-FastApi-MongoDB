@@ -1,6 +1,23 @@
+import sys
+import os
+from pathlib import Path
+
+# Añadir rutas a sys.path para compatibilidad con despliegues en Render y local
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from fastapi import FastAPI, HTTPException
-from app.models.schemas import Producto, Pedido
-from app.core.database import database
+try:
+    from app.models.schemas import Producto, Pedido
+    from app.core.database import database
+except (ImportError, ModuleNotFoundError):
+    from models.schemas import Producto, Pedido
+    from core.database import database
+
 from bson import ObjectId
 from typing import List
 
