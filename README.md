@@ -5,7 +5,19 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg)](https://fastapi.tiangolo.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas_Motor-47A248.svg)](https://www.mongodb.com/atlas)
 [![Django](https://img.shields.io/badge/Django-5.0%2B-092E20.svg)](https://www.djangoproject.com/)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7.svg)](https://render.com)
 [![Status](https://img.shields.io/badge/Release-v1.0-success.svg)]()
+
+---
+
+## 🌐 Enlaces de Despliegue en Vivo (Render)
+
+| Servicio | Componente | Enlace de Acceso |
+| :--- | :--- | :--- |
+| 💻 **Aplicativo Web** | Frontend (Django) | 🔗 [https://taller-2-fastapi-mongodb-2.onrender.com](https://taller-2-fastapi-mongodb-2.onrender.com) |
+| ⚡ **Backend API** | Backend (FastAPI) | 🔗 [https://taller-2-fastapi-mongodb-1.onrender.com](https://taller-2-fastapi-mongodb-1.onrender.com) |
+| 📑 **Documentación Swagger** | Swagger UI | 🔗 [https://taller-2-fastapi-mongodb-1.onrender.com/docs](https://taller-2-fastapi-mongodb-1.onrender.com/docs) |
+| 📖 **Documentación Redoc** | Redoc | 🔗 [https://taller-2-fastapi-mongodb-1.onrender.com/redoc](https://taller-2-fastapi-mongodb-1.onrender.com/redoc) |
 
 ---
 
